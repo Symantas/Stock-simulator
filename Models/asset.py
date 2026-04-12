@@ -1,8 +1,9 @@
 from abc import ABC, abstractmethod
 class Asset(ABC):
-    def __init__(self,name,price,volatility):
-        self.name=name
+    def __init__(self,name,price,symbol,volatility):
+        self.name = name
         self.price = price
+        self.symbol = symbol
         self.volatility = volatility
         self._price_history = [price]
         
@@ -27,6 +28,16 @@ class Asset(ABC):
         else:
             raise ValueError("Price must be a positive number check the asset price")
         
+        
+    @property
+    def symbol(self):
+        return self._symbol
+    @symbol.setter
+    def symbol(self,symbol):
+        if isinstance(symbol,str) and len(symbol)>0:
+            self._symbol = symbol
+        else:
+            raise ValueError("Symbol must be a non-empty string check the asset symbol")
     @property 
     def volatility(self):
         return self._volatility
