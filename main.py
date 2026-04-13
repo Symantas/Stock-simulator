@@ -1,76 +1,62 @@
+from Models.asset import Asset
 from Models.stock import Stock
 from Models.crypto_asset import CryptoAsset
+from Models.market import Market
+
 
 print("=" * 60)
-print("TEST 1: Construct Stock and CryptoAsset after symbol rename")
+print("TEST: get_asset lookup")
 print("=" * 60)
+
 apple = Stock("Apple", 150, "AAPL", 0.02, "Tech", 0.005)
 btc = CryptoAsset("Bitcoin", 60000, "BTC", 0.05, "Bitcoin", 21_000_000, 19_700_000)
-apple.display_details()
-btc.display_details()
-print("apple.symbol:", apple.symbol)
-print("btc.symbol:", btc.symbol)
-print("apple.price_history:", apple.price_history)
-print("btc.price_history:", btc.price_history)
+tesla = Stock("Tesla", 250, "TSLA", 0.04, "Auto", 0.0)
+
+market = Market({"AAPL": apple, "BTC": btc, "TSLA": tesla})
+
+# Case 1: existing symbols
+found_apple = market.get_asset("AAPL")
+print("Found AAPL:", found_apple)
+print("  type:", type(found_apple).__name__)
+print("  price:", found_apple.price)
+print("  name:", found_apple.name)
+
+found_btc = market.get_asset("BTC")
+print("Found BTC:", found_btc)
+print("  type:", type(found_btc).__name__)
+print("  price:", found_btc.price)
+
+# Case 2: missing symbol — should return None, not crash
+missing = market.get_asset("DOGE")
+print("Missing DOGE:", missing)
+print("  is None?", missing is None)
+
+# Case 3: you can still use the returned object normally
+apple_from_market = market.get_asset("AAPL")
+if apple_from_market is not None:
+    apple_from_market.display_details()
 
 print()
 print("=" * 60)
-print("TEST 2: _record_price updates price and history atomically")
-print("=" * 60)
-apple._record_price(153)
-apple._record_price(151)
-print("apple.price:", apple.price)
-print("apple.price_history:", apple.price_history)
-
-print()
-print("=" * 60)
-print("TEST 3: Polymorphism loop across mixed Asset subclasses")
-print("=" * 60)
-assets = [
-    Stock("Apple", 150, "AAPL", 0.02, "Tech", 0.005),
-    CryptoAsset("Bitcoin", 60000, "BTC", 0.05, "Bitcoin", 21_000_000, 19_700_000),
-    Stock("Tesla", 250, "TSLA", 0.04, "Auto", 0.0),
-    CryptoAsset("Ethereum", 3000, "ETH", 0.06, "Ethereum", 120_000_000, 120_000_000),
-]
-for asset in assets:
-    asset.display_details()
-    print()
-
-print("=" * 60)
-print("TEST 4: Validators fire on bad input")
+print("TEST: Market construction validators still fire")
 print("=" * 60)
 
 try:
-    Stock("Tesla", -10, "TSLA", 0.02, "Auto", 0.01)
+    Market({})
 except ValueError as e:
-    print("Caught (negative price):", e)
+    print("Caught (empty dict):", e)
 
 try:
-    apple.dividend_yield = 1.5
+    Market([apple, btc])
 except ValueError as e:
-    print("Caught (dividend > 1):", e)
+    print("Caught (not a dict):", e)
 
 try:
-    apple.volatility = 2.0
+    Market({"AAPL": 42})
 except ValueError as e:
-    print("Caught (volatility > 1):", e)
+    print("Caught (value not an Asset):", e)
 
 try:
-    Stock("", 10, "AAPL", 0.02, "Tech", 0.005)
+    Market({"APPL": apple})  # typo in key, apple.symbol is "AAPL"
 except ValueError as e:
-    print("Caught (empty name):", e)
-
-try:
-    Stock("Apple", 150, "", 0.02, "Tech", 0.005)
-except ValueError as e:
-    print("Caught (empty symbol):", e)
-
-try:
-    apple.volatility = True
-except ValueError as e:
-    print("Caught (bool volatility):", e)
-
-try:
-    CryptoAsset("Bad", 60000, "BAD", 0.05, "Bitcoin", 21_000_000, 22_000_000)
-except ValueError as e:
-    print("Caught (circulation > max):", e)
+    print("Caught (key/symbol mismatch):", e)
