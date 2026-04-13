@@ -27,3 +27,12 @@ class Market:
     def get_asset(self,symbol):
             return self._assets.get(symbol)
         
+    def tick(self): 
+        self._tick_count +=1
+        for asset in self._assets.values():
+            new_price = asset.price * 1.01
+            asset._record_price(new_price)
+            
+          
+            
+        
