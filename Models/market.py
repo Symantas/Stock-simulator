@@ -1,6 +1,6 @@
 
 from Models.asset import Asset
-
+import random
 
 class Market:
     SHOCK_PROBABILITY = 0.01
@@ -30,9 +30,21 @@ class Market:
     def tick(self): 
         self._tick_count +=1
         for asset in self._assets.values():
-            new_price = asset.price * 1.01
+            old_price = asset.price
+            new_price = self._compute_next_price(asset)
+            if abs((new_price - old_price) / old_price) > (asset.volatility * 3):
+                print(f"** Big move on {asset.symbol}!, trade with caution! **")
             asset._record_price(new_price)
             
           
-            
+    def _compute_next_price(self,asset):
+      if  random.random() < self.SHOCK_PROBABILITY:
+          bell_width = asset.volatility * self.SHOCK_MULTIPLIER
+      else:
+          bell_width = asset.volatility
+      change = random.gauss(0,bell_width)
+      new_price = asset.price * (1 + change)
+      new_price = max(new_price,self.PRICE_FLOOR)
+      return new_price
+        
         
