@@ -1,22 +1,15 @@
-from Models.stock import Stock
-from Models.crypto_asset import CryptoAsset
+from Models.factory import load_assets_from_csv
 from Models.market import Market
 
-# Temporarily crank shock probability so we actually see dramatic moves
-Market.SHOCK_PROBABILITY = 0.3
+assets = load_assets_from_csv("Data/assets.csv")
+market = Market(assets)
 
-apple = Stock("Apple", 150, "AAPL", 0.02, "Tech", 0.005)
-btc = CryptoAsset("Bitcoin", 60000, "BTC", 0.05, "Bitcoin", 21_000_000, 19_700_000)
-tesla = Stock("Tesla", 250, "TSLA", 0.04, "Auto", 0.0)
-
-market = Market({"AAPL": apple, "BTC": btc, "TSLA": tesla})
-
-print("Running 20 ticks with cranked shock probability (0.3)...")
+print(f"Loaded market with {len(market.assets)} assets from CSV")
 print()
 
-for i in range(20):
+for i in range(15):
     market.tick()
-    print(f"Tick {market._tick_count:2d}: "
-          f"AAPL={apple.price:8.2f}  "
-          f"BTC={btc.price:10.2f}  "
-          f"TSLA={tesla.price:8.2f}")
+    prices = "  ".join(
+        f"{a.symbol}={a.price:.2f}" for a in market.assets.values()
+    )
+    print(f"Tick {market._tick_count:2d}: {prices}")

@@ -1,0 +1,5 @@
+type,name,price,symbol,volatility,sector,dividend_yield,blockchain,max_supply,circulating_supply
+crypto,Doge,0.001,DOG,0.5,,,Ethereum,21000000,19000000
+stock,Apple,150.00,APPL,0.5,Technology,0.9,,,
+crypto,Bitcoin,3000000,BTC,0.5,,,Solana,10000,1000
+stock,Microsoft,250,MSFT,0.5,Technology,0.01,,,
