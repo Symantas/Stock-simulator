@@ -1,60 +1,38 @@
 from Models.factory import load_assets_from_csv
 from Models.market import Market
-from Models.portfolio import Portfolio
+from Models.user import User
 
 assets = load_assets_from_csv("Data/assets.csv")
 market = Market(assets)
-portfolio = Portfolio()
-
-apple = market.get_asset("APPL")
-btc = market.get_asset("BTC")
+user = User("Simon", 10000)
 
 print("=" * 60)
-print("TEST: Empty portfolio")
+print("TEST: Fresh user")
 print("=" * 60)
-portfolio.display_holdings()
+user.display_portfolio()
 
 print()
 print("=" * 60)
-print("TEST: Buy 10 Apple and 2 Bitcoin")
+print("TEST: Buy 10 Apple")
 print("=" * 60)
-portfolio.buy(apple, 10)
-portfolio.buy(btc, 2)
-portfolio.display_holdings()
-print(f"Total value: ${portfolio.total_value():.2f}")
-
-print()
-print("=" * 60)
-print("TEST: Buy 5 more Apple (should increase to 15)")
-print("=" * 60)
-portfolio.buy(apple, 5)
-portfolio.display_holdings()
-print(f"Total value: ${portfolio.total_value():.2f}")
+user.buy("APPL", 10, market)
+user.display_portfolio()
 
 print()
 print("=" * 60)
 print("TEST: Sell 3 Apple")
 print("=" * 60)
-portfolio.sell(apple, 3)
-portfolio.display_holdings()
-print(f"Total value: ${portfolio.total_value():.2f}")
+user.sell("APPL", 3, market)
+user.display_portfolio()
 
 print()
 print("=" * 60)
-print("TEST: Market tick — prices change, portfolio value follows")
+print("TEST: Market tick — portfolio value changes")
 print("=" * 60)
-print(f"Before tick: APPL=${apple.price:.2f}, BTC=${btc.price:.2f}")
-print(f"Before tick: Total value: ${portfolio.total_value():.2f}")
+print(f"Before tick: cash=${user.cash:.2f}, portfolio=${user.portfolio.total_value():.2f}")
 market.tick()
-print(f"After tick:  APPL=${apple.price:.2f}, BTC=${btc.price:.2f}")
-print(f"After tick:  Total value: ${portfolio.total_value():.2f}")
-
-print()
-print("=" * 60)
-print("TEST: Sell all remaining Apple")
-print("=" * 60)
-portfolio.sell(apple, 12)
-portfolio.display_holdings()
+print(f"After tick:  cash=${user.cash:.2f}, portfolio=${user.portfolio.total_value():.2f}")
+user.display_portfolio()
 
 print()
 print("=" * 60)
@@ -62,16 +40,16 @@ print("TEST: Validators")
 print("=" * 60)
 
 try:
-    portfolio.sell(apple, 5)
+    user.buy("FAKE", 10, market)
 except ValueError as e:
-    print("Caught (sell asset not owned):", e)
+    print("Caught (fake symbol):", e)
 
 try:
-    portfolio.buy(apple, -10)
+    user.buy("APPL", 99999, market)
 except ValueError as e:
-    print("Caught (negative quantity):", e)
+    print("Caught (not enough cash):", e)
 
 try:
-    portfolio.sell(btc, 999)
+    user.sell("BTC", 5, market)
 except ValueError as e:
-    print("Caught (sell more than owned):", e)
+    print("Caught (sell unowned):", e)
