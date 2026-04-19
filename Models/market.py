@@ -27,6 +27,11 @@ class Market:
     def get_asset(self,symbol):
             return self._assets.get(symbol)
         
+    @property
+    def tick_count(self):
+        return self._tick_count
+    
+    
     def tick(self): 
         self._tick_count +=1
         for asset in self._assets.values():

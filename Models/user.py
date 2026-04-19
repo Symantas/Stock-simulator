@@ -1,10 +1,11 @@
 from Models.portfolio import Portfolio
-
+from Models.transaction import Transaction
 class User:
     def __init__(self,name,cash):
         self.name = name
         self.cash = cash
         self.portfolio = Portfolio()
+        self._transactions = Transaction()
         
     @property
     def name(self):
@@ -34,14 +35,20 @@ class User:
         else:
             self._cash -= asset.price * quantity
             self.portfolio.buy(asset,quantity)
+            self._transactions.add(asset,quantity,asset.price,"buy",market.tick_count)
     def sell(self,symbol,quantity,market):
         asset=market.get_asset(symbol)
         if asset is None:
             raise ValueError("Asset not found in the market check the symbol field!")
         self.portfolio.sell(asset,quantity)
         self._cash += asset.price * quantity
+        self._transactions.add(asset,quantity,asset.price,"sell",market.tick_count)
         
     def display_portfolio(self):
         print(f"{self.name}'s Portfolio:")
         self.portfolio.display_holdings()
         print(f"Cash balance: ${self.cash:.2f}")
+        
+        print("\nTransaction History:")
+        self._transactions.display()
+        
