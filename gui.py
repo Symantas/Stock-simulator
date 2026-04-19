@@ -2,6 +2,8 @@ from Models.factory import load_assets_from_csv
 from Models.market import Market
 from Models.user import User
 import customtkinter as ctk
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 class StockSimulatorApp:
     def __init__(self):
@@ -87,6 +89,54 @@ class StockSimulatorApp:
         if hasattr(asset, "blockchain"):
             ctk.CTkLabel(self.detail_frame, text=f"Blockchain: {asset.blockchain}", font=("Arial", 14), text_color="#aaaaaa").pack(pady=2)
 
+        buy_sell_frame = ctk.CTkFrame(self.detail_frame, fg_color="transparent")
+        buy_sell_frame.pack(pady=20)
+
+        self.qty_entry = ctk.CTkEntry(buy_sell_frame, placeholder_text="Quantity", width=120)
+        self.qty_entry.pack(side="left", padx=5)
+
+        ctk.CTkButton(buy_sell_frame, text="Buy", width=80, fg_color="#00aa55", hover_color="#008844", command=self._handle_buy).pack(side="left", padx=5)
+        ctk.CTkButton(buy_sell_frame, text="Sell", width=80, fg_color="#cc3333", hover_color="#aa2222", command=self._handle_sell).pack(side="left", padx=5)
+
+        if len(asset.price_history) > 1:
+            fig, ax = plt.subplots(figsize=(5, 2.5))
+            fig.patch.set_facecolor("#0f3460")
+            ax.set_facecolor("#1a1a2e")
+            ax.plot(asset.price_history, color="#00ff88", linewidth=1.5)
+            ax.tick_params(colors="#aaaaaa", labelsize=8)
+            ax.spines[:].set_color("#333355")
+            ax.set_xlabel("Tick", color="#aaaaaa", fontsize=8)
+            ax.set_ylabel("Price", color="#aaaaaa", fontsize=8)
+            fig.tight_layout(pad=1.0)
+            canvas = FigureCanvasTkAgg(fig, master=self.detail_frame)
+            canvas.draw()
+            canvas.get_tk_widget().pack(fill="x", padx=15, pady=(5, 15))
+            plt.close(fig)
+
+    def _handle_buy(self):
+        if self._selected_asset is None:
+            print("Select an asset first")
+            return
+        try:
+            qty = float(self.qty_entry.get())
+            self.user.buy(self._selected_asset.symbol, qty, self.market)
+            self._update_display()
+            print(f"Bought {qty} {self._selected_asset.symbol}")
+        except ValueError as e:
+            print(e)
+
+    def _handle_sell(self):
+        if self._selected_asset is None:
+            print("Select an asset first")
+            return
+        try:
+            qty = float(self.qty_entry.get())
+            self.user.sell(self._selected_asset.symbol, qty, self.market)
+            self._update_display()
+            print(f"Sold {qty} {self._selected_asset.symbol}")
+        except ValueError as e:
+            print(e)
+
     def _play(self):
         self._running = True
         self._tick()
@@ -103,8 +153,7 @@ class StockSimulatorApp:
     def _update_display(self):
         for symbol, label in self._price_labels.items():
             asset = self.market.get_asset(symbol)
-            new_price = asset.price
-            label.configure(text=f"${new_price:,.2f}")
+            label.configure(text=f"${asset.price:,.2f}")
         self.tick_label.configure(text=f"Tick: {self.market.tick_count}")
         self.cash_label.configure(text=f"Cash: ${self.user.cash:,.2f}")
         if self._selected_asset:
