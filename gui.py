@@ -25,6 +25,10 @@ class StockSimulatorApp:
         self.portfolio_tab = self.tabs.add("Portfolio")
         self.transaction_tab = self.tabs.add("Transactions")
         self._build_market_tab()
+        self._build_portfolio_tab()
+        self._build_transaction_tab()
+        self._update_portfolio_display()
+        self._update_transaction_display()
 
     def _build_bottom_bar(self):
         bar = ctk.CTkFrame(self.root, height=50, fg_color="#1a1a2e")
@@ -113,6 +117,112 @@ class StockSimulatorApp:
             canvas.get_tk_widget().pack(fill="x", padx=15, pady=(5, 15))
             plt.close(fig)
 
+    def _build_portfolio_tab(self):
+        self.portfolio_frame = ctk.CTkFrame(self.portfolio_tab, fg_color="#0f3460")
+        self.portfolio_frame.pack(fill="both", expand=True, padx=10, pady=10)
+
+    def _build_transaction_tab(self):
+        self.transaction_frame = ctk.CTkFrame(self.transaction_tab, fg_color="#0f3460")
+        self.transaction_frame.pack(fill="both", expand=True, padx=10, pady=10)
+
+    def _update_portfolio_display(self):
+        for widget in self.portfolio_frame.winfo_children():
+            widget.destroy()
+
+        ctk.CTkLabel(self.portfolio_frame, text="Portfolio", font=("Arial", 28, "bold")).pack(pady=(20, 15))
+
+        portfolio_value = self.user.portfolio.total_value()
+        total_value = self.user.cash + portfolio_value
+
+        info_frame = ctk.CTkFrame(self.portfolio_frame, fg_color="#1a1a2e", corner_radius=8)
+        info_frame.pack(fill="x", padx=20, pady=10)
+
+        ctk.CTkLabel(info_frame, text=f"Cash: ${self.user.cash:,.2f}", font=("Arial", 16), text_color="#00ff88").pack(anchor="w", padx=15, pady=10)
+        ctk.CTkLabel(info_frame, text=f"Holdings Value: ${portfolio_value:,.2f}", font=("Arial", 16), text_color="#00ffff").pack(anchor="w", padx=15, pady=5)
+        ctk.CTkLabel(info_frame, text=f"Total Value: ${total_value:,.2f}", font=("Arial", 18, "bold"), text_color="#ffff00").pack(anchor="w", padx=15, pady=10)
+
+        if self.user.portfolio._holdings:
+            holdings_label = ctk.CTkLabel(self.portfolio_frame, text="Holdings", font=("Arial", 20, "bold"))
+            holdings_label.pack(pady=(20, 10), anchor="w", padx=20)
+
+            holdings_scroll = ctk.CTkScrollableFrame(self.portfolio_frame, fg_color="#1a1a2e")
+            holdings_scroll.pack(fill="both", expand=True, padx=20, pady=10)
+
+            for symbol, holding in self.user.portfolio._holdings.items():
+                asset = holding["asset"]
+                qty = holding["quantity"]
+                value = asset.price * qty
+
+                qty_str = f"{qty:.2f}".rstrip('0').rstrip('.') if qty % 1 != 0 else f"{int(qty)}"
+
+                row = ctk.CTkFrame(holdings_scroll, fg_color="#16213e", corner_radius=8)
+                row.pack(fill="x", pady=5)
+
+                ctk.CTkLabel(row, text=asset.name, font=("Arial", 14, "bold"), anchor="w").pack(side="left", padx=10, pady=8, expand=True, fill="x")
+                ctk.CTkLabel(row, text=f"{qty_str} units", font=("Arial", 12), text_color="#aaaaaa", anchor="center").pack(side="left", padx=5, pady=8)
+                ctk.CTkLabel(row, text=f"@ ${asset.price:,.2f}", font=("Arial", 12), text_color="#00ff88", anchor="center").pack(side="left", padx=5, pady=8)
+                ctk.CTkLabel(row, text=f"${value:,.2f}", font=("Arial", 13, "bold"), text_color="#00ffff", anchor="center").pack(side="left", padx=5, pady=8)
+                ctk.CTkButton(row, text="Sell", width=60, fg_color="#cc3333", hover_color="#aa2222", command=lambda s=symbol, q=qty: self._quick_sell(s, q)).pack(side="right", padx=10, pady=8)
+        else:
+            ctk.CTkLabel(self.portfolio_frame, text="Portfolio is empty", font=("Arial", 16), text_color="#888888").pack(pady=40)
+
+    def _update_transaction_display(self):
+        for widget in self.transaction_frame.winfo_children():
+            widget.destroy()
+
+        ctk.CTkLabel(self.transaction_frame, text="Transaction History", font=("Arial", 28, "bold")).pack(pady=(20, 15))
+
+        if self.user._transactions.history:
+            trans_scroll = ctk.CTkScrollableFrame(self.transaction_frame, fg_color="#1a1a2e")
+            trans_scroll.pack(fill="both", expand=True, padx=20, pady=10)
+
+            for i, trans in enumerate(self.user._transactions.history):
+                asset = trans["asset"]
+                qty = trans["quantity"]
+                price = trans["price"]
+                position = trans["position"]
+                tick = trans["tick"]
+                total = qty * price
+
+                qty_str = f"{qty:.2f}".rstrip('0').rstrip('.') if qty % 1 != 0 else f"{int(qty)}"
+
+                color = "#00ff88" if position == "buy" else "#ff6666"
+                bg_color = "#0d2818" if position == "buy" else "#330000"
+
+                row = ctk.CTkFrame(trans_scroll, fg_color=bg_color, corner_radius=8)
+                row.pack(fill="x", pady=5)
+
+                action_text = f"{'BUY' if position == 'buy' else 'SELL'} {qty_str}x {asset.symbol}"
+                ctk.CTkLabel(row, text=action_text, font=("Arial", 13, "bold"), text_color=color, anchor="w").pack(side="left", padx=10, pady=8, expand=True, fill="x")
+
+                details_text = f"@ ${price:,.2f} • Tick {tick}"
+                ctk.CTkLabel(row, text=details_text, font=("Arial", 12), text_color="#aaaaaa", anchor="center").pack(side="left", padx=5, pady=8)
+
+                ctk.CTkLabel(row, text=f"${total:,.2f}", font=("Arial", 12, "bold"), text_color=color, anchor="e").pack(side="right", padx=10, pady=8)
+        else:
+            ctk.CTkLabel(self.transaction_frame, text="No transactions yet", font=("Arial", 16), text_color="#888888").pack(pady=40)
+
+    def _quick_sell(self, symbol, available_qty):
+        dialog = ctk.CTkInputDialog(text=f"Enter quantity to sell (max: {available_qty:.2f}):", title="Sell")
+        qty_str = dialog.get_input()
+
+        if qty_str is None or qty_str == "":
+            return
+
+        try:
+            qty = float(qty_str)
+            if qty <= 0:
+                print("Quantity must be positive")
+                return
+            if qty > available_qty:
+                print(f"Cannot sell more than {available_qty:.2f} units")
+                return
+            self.user.sell(symbol, qty, self.market)
+            self._update_display()
+            print(f"Sold {qty} {symbol}")
+        except ValueError:
+            print("Invalid quantity")
+
     def _handle_buy(self):
         if self._selected_asset is None:
             print("Select an asset first")
@@ -158,6 +268,8 @@ class StockSimulatorApp:
         self.cash_label.configure(text=f"Cash: ${self.user.cash:,.2f}")
         if self._selected_asset:
             self._select_asset(self._selected_asset)
+        self._update_portfolio_display()
+        self._update_transaction_display()
 
     def run(self):
         self.root.mainloop()
