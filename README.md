@@ -43,7 +43,7 @@ On first launch a setup dialog appears — enter a player name and select a star
 | **Market** | Click any asset in the watchlist to open its detail panel. Enter a quantity and click **Buy** or **Sell**. A price-history chart appears after the first tick. |
 | **Portfolio** | View current holdings, per-holding unrealised P&L, and the overall net gain or loss since the session started. Use the **Sell** button on any row for a quick partial sell. |
 | **Transactions** | Full history of every buy and sell with price and tick number. |
-| **Bottom bar** | ▶ Play / ⏸ Pause the simulation. Switch between **Realistic**, **Volatile**, and **Extremely Volatile** modes. Import additional assets from a CSV file. Click **📄 Report** to save a full session summary to a `.txt` file. |
+| **Bottom bar** |  Play /  Pause the simulation. Switch between **Realistic**, **Volatile**, and **Extremely Volatile** modes. Import additional assets from a CSV file. Click **Report** to save a full session summary to a `.txt` file. |
 
 ---
 
@@ -233,11 +233,11 @@ def load_assets_from_csv(path):
     return assets
 ```
 
-The same function is reused at runtime when the player clicks **⬆ Import CSV**, allowing new assets to be added to a live session without restarting.
+The same function is reused at runtime when the player clicks **Import CSV**, allowing new assets to be added to a live session without restarting.
 
 #### Writing to file
 
-Clicking **📄 Report** in the GUI saves a plain-text session report via `filedialog.asksaveasfilename`. The report includes the session summary, every holding with its unrealised P&L, and the full transaction history.
+Clicking **Report** in the GUI saves a plain-text session report via `filedialog.asksaveasfilename`. The report includes the session summary, every holding with its unrealised P&L, and the full transaction history.
 
 ```python
 # gui.py — _generate_report()
