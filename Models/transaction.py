@@ -1,3 +1,5 @@
+from Models.validators import is_positive_number, is_non_negative_int
+
 class Transaction:
     def __init__(self):
         self.history = []
@@ -5,11 +7,11 @@ class Transaction:
     def add(self, asset, quantity, price, position, tick):
         if position not in ["buy", "sell"]:
             raise ValueError("Position must be either 'buy' or 'sell' check the position field!")
-        if not (isinstance(quantity, (int, float)) and not isinstance(quantity, bool) and quantity > 0):
+        if not is_positive_number(quantity):
             raise ValueError("Quantity must be a positive number check the quantity field!")
-        if not (isinstance(price, (int, float)) and not isinstance(price, bool) and price > 0):
+        if not is_positive_number(price):
             raise ValueError("Price must be a positive number check the price field!")
-        if not (isinstance(tick, int) and tick >= 0):
+        if not is_non_negative_int(tick):
             raise ValueError("Tick must be a non-negative integer check the tick field!")
         if not hasattr(asset, "symbol") or not hasattr(asset, "name"):
             raise ValueError("Asset must have symbol and name attributes check the asset field!")
