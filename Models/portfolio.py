@@ -35,14 +35,14 @@ class Portfolio():
             del self._holdings[asset.symbol]
 
     def unrealized_pnl(self):
-        """Current market value of all holdings minus what was paid for them."""
+        # Market value minus cost basis
         total = 0.0
         for h in self._holdings.values():
             total += h["asset"].price * h["quantity"] - h["cost_basis"]
         return total
 
     def unrealized_pnl_by_symbol(self):
-        """Returns {symbol: pnl} for each holding."""
+        # Unrealized P&L per symbol
         return {
             symbol: h["asset"].price * h["quantity"] - h["cost_basis"]
             for symbol, h in self._holdings.items()

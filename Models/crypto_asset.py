@@ -1,5 +1,5 @@
 from Models.asset import Asset
-from Models.validators import is_non_empty_string, is_non_negative_number
+from Models.validators import is_non_empty_string, is_non_negative_number, is_number_in_range
 
 class CryptoAsset(Asset):
     def __init__(self, name, price, symbol, volatility, blockchain, max_supply, circulating_supply):
@@ -34,8 +34,8 @@ class CryptoAsset(Asset):
 
     @circulating_supply.setter
     def circulating_supply(self, circulating_supply):
-        if not is_non_negative_number(circulating_supply) or circulating_supply > self.max_supply:
-            raise ValueError("Circulating supply error! must be non negative and cannot exceed max_supply)")
+        if not is_number_in_range(circulating_supply, 0, self.max_supply):
+            raise ValueError("Circulating supply must be between 0 and max supply.")
         self._circulating_supply = circulating_supply
 
     def display_details(self):

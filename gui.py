@@ -3,6 +3,7 @@ from tkinter import filedialog
 from Models.factory import load_assets_from_csv
 from Models.market import Market
 from Models.user import User
+from Models.validators import is_positive_number, is_number_in_range
 import customtkinter as ctk
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -49,15 +50,13 @@ def _fmt_qty(qty):
 
 
 def _pnl_style(value):
-    """Return (sign_prefix, color) for a P&L value."""
+    # Sign prefix and color for a P&L value
     return ("+" if value >= 0 else "", THEME["green"] if value >= 0 else "#ff6666")
 
 
 # ── Startup dialog ────────────────────────────────────────────────────────────
 
 class StartupDialog:
-    """Collects player name and starting cash before the simulator opens."""
-
     def __init__(self):
         self.result = None
         self._root = ctk.CTk()
@@ -116,9 +115,10 @@ class StartupDialog:
         raw = self._cash_entry.get().strip().replace(",", "").replace("$", "")
         try:
             cash = float(raw)
-            if cash <= 0:
-                raise ValueError
         except ValueError:
+            self._error_label.configure(text="Enter a valid positive cash amount.")
+            return
+        if not is_positive_number(cash):
             self._error_label.configure(text="Enter a valid positive cash amount.")
             return
         self.result = (name, cash)
@@ -141,11 +141,14 @@ class StockSimulatorApp:
         self._running = False
         self._selected_asset = None
         self._price_labels = {}
-        self._detail_price_label = None  # updated in-place on each tick
+        self._detail_price_label = None  # updated each tick
+        self._after_tick_id = None
+        self._after_status_id = None
 
         self.root = ctk.CTk()
         self.root.title("Stock Market Simulator")
         self.root.geometry("1000x650")
+        self.root.protocol("WM_DELETE_WINDOW", self._on_closing)
 
         self._build_bottom_bar()
 
@@ -157,7 +160,7 @@ class StockSimulatorApp:
 
         self._build_market_tab()
 
-        # Portfolio and transaction containers — just the persistent frame
+        # Persistent frames for portfolio and transactions
         self.portfolio_frame = ctk.CTkFrame(self.portfolio_tab, fg_color=THEME["bg_panel"])
         self.portfolio_frame.pack(fill="both", expand=True, padx=10, pady=10)
 
@@ -427,7 +430,7 @@ class StockSimulatorApp:
             return
         try:
             qty = float(qty_str)
-            if qty <= 0 or qty > available_qty:
+            if not is_number_in_range(qty, 1e-9, available_qty):
                 self._set_status("Invalid quantity.", error=True)
                 return
             self.user.sell(symbol, qty, self.market)
@@ -469,11 +472,20 @@ class StockSimulatorApp:
     def _pause(self):
         self._running = False
 
+    def _on_closing(self):
+        self._running = False
+        if self._after_tick_id:
+            self.root.after_cancel(self._after_tick_id)
+        if self._after_status_id:
+            self.root.after_cancel(self._after_status_id)
+        self.root.quit()
+        self.root.destroy()
+
     def _tick(self):
         self.market.tick()
         self._update_display()
         if self._running:
-            self.root.after(1000, self._tick)
+            self._after_tick_id = self.root.after(1000, self._tick)
 
     # ── Display helpers ───────────────────────────────────────────────────────
 
@@ -490,7 +502,7 @@ class StockSimulatorApp:
         pnl_sign, pnl_color = _pnl_style(pnl)
         self.pnl_label.configure(text=f"P&L: {pnl_sign}${pnl:,.2f}", text_color=pnl_color)
 
-        # Update only the price label in the detail panel — no full rebuild
+        # Update detail price label without full rebuild
         if self._detail_price_label and self._selected_asset:
             self._detail_price_label.configure(
                 text=f"${self._selected_asset.price:,.2f}")
@@ -499,10 +511,11 @@ class StockSimulatorApp:
         self._update_transaction_display()
 
     def _set_status(self, message, error=False):
-        _, color = _pnl_style(0 if not error else -1)
         color = THEME["red"] if error else THEME["green"]
         self.status_label.configure(text=message, text_color=color)
-        self.root.after(4000, lambda: self.status_label.configure(text=""))
+        if self._after_status_id:
+            self.root.after_cancel(self._after_status_id)
+        self._after_status_id = self.root.after(4000, lambda: self.status_label.configure(text=""))
 
     def _generate_report(self):
         path = filedialog.asksaveasfilename(

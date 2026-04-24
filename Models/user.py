@@ -37,7 +37,7 @@ class User:
 
     @property
     def total_pnl(self):
-        """Net gain/loss since simulation start."""
+        # Net gain/loss since start
         return (self._cash + self.portfolio.total_value()) - self._starting_cash
 
     def buy(self, symbol, quantity, market):
